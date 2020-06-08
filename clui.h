@@ -15,24 +15,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <stdbool.h>
 
-/*
- * includes for unix and linux
- */
 
 /*
  * includes for windows
  */
 #if defined(_WIN32) || defined(_WIN64) || defined(WI32)
+
 #define OS_UNIX 0
 #include <conio.h>
 #include <Windows.h>
 
 /*
- * includes for unix system
- * typically mac os or linux
+ * includes for unix-like systems
+ * MacOS or linux
  */
 #else
+
 #define OS_UNIX 1
 #include <termios.h>
 #include <unistd.h>
@@ -69,6 +69,35 @@
 
 
 
+
+void enable_raw_mode(){
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
+    tcsetattr(0, TCSANOW, &term);
+}
+
+void disable_raw_mode(){
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag |= ICANON | ECHO;
+    tcsetattr(0, TCSANOW, &term);
+}
+
+
+bool is_keyboard_hit(){
+#if OS_UNIX
+    int byteswaiting;
+    ioctl(0, FIONREAD, &byteswaiting);
+    return byteswaiting > 0;
+#else 
+    return _kbhit();
+#endif
+}
+
+
+
+
 void clear_screen(){
 #if OS_UNIX
     printf("\033c"); //for ansi terminal
@@ -76,6 +105,8 @@ void clear_screen(){
     system("CLS"); //for windows
 #endif
 }
+
+
 
 /*
  * change output color of terminal
@@ -124,8 +155,15 @@ void reset_color(){
 }
 
 
+void flush(){
+    fflush(stdout);
+    fflush(stderr);
+} 
+
+
 void quit() {
     reset_color();
+    disable_raw_mode();
     clear_screen();
     exit(0);
 }
@@ -135,11 +173,10 @@ void sigint_handler(int dummy) {
     quit();
 }
 
-
-
 void init_clui(){
     clear_screen();
     signal(SIGINT, sigint_handler);
+    enable_raw_mode();
 #if OS_UNIX == 2
     //printf("warning, using on unkown operation system\n");
 #endif
