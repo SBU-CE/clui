@@ -1,5 +1,5 @@
 # clui
-simple multi-platform library for doing terminal thing.
+simple cross-platform library for doing terminal thing.
 
 to learn more about functions, view `sample.c` 
 
