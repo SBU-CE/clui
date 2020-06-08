@@ -41,12 +41,18 @@ int main() {
     printf("this text is some color \n");
     reset_color();
 
+    printf("press any key to see what happen!\n");
+    printf("and press esc for exit\n");
+
     // loop of our demo progrma
     while (true) {
-
-        printf("."); //show that this is non-blocking
+        //here we show that this is non-blocking
+        // we print and get character in same while
+        printf(".");
+        // flush the stdout (behave same as cout << endl)
         flush();
 
+        // wiat for 0.1 second
         delay(100);
 
         // we only get character if a key is pressed
