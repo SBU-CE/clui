@@ -71,18 +71,27 @@
 
 
 void enable_raw_mode(){
+#if OS_UNIX
     struct termios term;
     tcgetattr(0, &term);
     term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
     tcsetattr(0, TCSANOW, &term);
+#else
+
+#endif
 }
 
 void disable_raw_mode(){
+#if OS_UNIX
     struct termios term;
     tcgetattr(0, &term);
     term.c_lflag |= ICANON | ECHO;
     tcsetattr(0, TCSANOW, &term);
+#else
+
+#endif
 }
+
 
 
 bool is_keyboard_hit(){
@@ -90,8 +99,8 @@ bool is_keyboard_hit(){
     int byteswaiting;
     ioctl(0, FIONREAD, &byteswaiting);
     return byteswaiting > 0;
-#else 
-    return _kbhit();
+#else
+    return kbhit();
 #endif
 }
 
@@ -100,9 +109,9 @@ bool is_keyboard_hit(){
 
 void clear_screen(){
 #if OS_UNIX
-    printf("\033c"); //for ansi terminal
+    system("clear");
 #else
-    system("CLS"); //for windows
+    system("CLS");
 #endif
 }
 
@@ -158,7 +167,7 @@ void reset_color(){
 void flush(){
     fflush(stdout);
     fflush(stderr);
-} 
+}
 
 
 void quit() {

@@ -1,8 +1,11 @@
 
 run: compile
-	./a.out
+	./a.exe
 
 compile:
-	gcc -Wall sample.c
+	gcc -Wall sample.c -o a.exe
 
 
+clean:
+	rm a.out
+	rm a.exe
