@@ -1,5 +1,5 @@
 /*
- * clui library, by nima heydari nasab 
+ * clui library, by nima heydari nasab
  * @radio_nima
  * and some changes by roozbeh sharifnasab
  * @rsharifnasab
@@ -17,30 +17,26 @@
 #include <signal.h>
 
 /*
- * includes for unix and linux 
+ * includes for unix and linux
  */
-#ifdef __unix__
-    #define OS_UNIX 1
-    #include <termios.h>
-    #include <unistd.h>
 
 /*
  * includes for windows
  */
-#elif defined(_WIN32) || defined(_WIN64) || defined(WI32)
-    #define OS_UNIX 0
-    #include <conio.h>
+#if defined(_WIN32) || defined(_WIN64) || defined(WI32)
+#define OS_UNIX 0
+#include <conio.h>
+#include <Windows.h>
 
 /*
- * includes for unknown operation system
- * typically mac os 
- * it will hopefully work if unknown operation system is posix
- * I've tested on MacOS
+ * includes for unix system
+ * typically mac os or linux
  */
 #else
-    #define OS_UNIX 2
-    #include <termios.h>
-    #include <unistd.h>
+#define OS_UNIX 1
+#include <termios.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 
 #endif
 
@@ -74,16 +70,16 @@
 
 
 void clear_screen(){
-    #if OS_UNIX
+#if OS_UNIX
     printf("\033c"); //for ansi terminal
-    #else
+#else
     system("CLS"); //for windows
-    #endif
+#endif
 }
 
 /*
- * change output color of terminal 
- * by RGB input 
+ * change output color of terminal
+ * by RGB input
  * this will only work for 24-bit terminals
  * tested in linux terminals
  * and new Windows10 cmd and powershell
@@ -97,7 +93,7 @@ void change_color_rgb(int r, int g, int b){
  */
 void change_color(int color) {
     printf("\033");
-     
+
     const char *colors[] = {
         "[0m",
         "[0;31m",
@@ -112,10 +108,10 @@ void change_color(int color) {
         "[1;35m",
         "[0;36m",
         "[1;36m",
-        
+
         "[38;5;202m",
         "[38;5;208m",
-        "[38;5;214m" 
+        "[38;5;214m"
     };
     if (color >= 0 && color <= 15) {
         printf("%s", colors[color]);
@@ -144,13 +140,13 @@ void sigint_handler(int dummy) {
 void init_clui(){
     clear_screen();
     signal(SIGINT, sigint_handler);
-    #if OS_UNIX == 2 
-        //printf("warning, using on unkown operation system\n");
-    #endif      
+#if OS_UNIX == 2
+    //printf("warning, using on unkown operation system\n");
+#endif
 }
 
 
-#if OS_UNIX 
+#if OS_UNIX
 int getch(){
     struct termios oldattr, newattr;
     int ch;
@@ -164,6 +160,43 @@ int getch(){
 }
 #endif
 
-//TODO: add other functions and make them platform independent
+
+void delay(int milli_seconds){
+#if OS_UNIX
+    usleep(1000*milli_seconds);
+#else
+    Sleep(milli_seconds);
+#endif
+}
+
+
+
+
+int get_window_rows(){
+#if OS_UNIX
+    struct winsize max;
+    ioctl(0, TIOCGWINSZ , &max);
+    return max.ws_row;
+#else
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+#endif
+}
+
+
+int get_window_cols(){
+#if OS_UNIX
+    struct winsize max;
+    ioctl(0, TIOCGWINSZ , &max);
+    return max.ws_col;
+#else
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+#endif
+}
+
+
 
 #endif
