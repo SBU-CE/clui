@@ -6,4 +6,4 @@ compile:
 	gcc -Wall sample.c -o a.exe
 
 clean:
-	rm a.exe
+	rm *.exe

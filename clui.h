@@ -186,9 +186,6 @@ void init_clui(){
     clear_screen();
     signal(SIGINT, sigint_handler);
     enable_raw_mode();
-#if OS_UNIX == 2
-    //printf("warning, using on unkown operation system\n");
-#endif
 }
 
 

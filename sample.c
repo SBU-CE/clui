@@ -22,6 +22,7 @@ int main() {
     printf("this text is some color \n");
     reset_color();
 
+
     printf("press any key to see what happen!\n");
     printf("and press esc for exit\n");
 
@@ -33,7 +34,7 @@ int main() {
         // flush the stdout (behave same as cout << endl)
         flush();
 
-        // wiat for 0.1 second
+        // wait for 0.1 second in every iteration
         delay(100);
 
         // we only get character if a key is pressed
@@ -43,9 +44,7 @@ int main() {
             if (t == 27) break;
             printf("%c\n", t);
         }
-
     }
-
 
     quit();
     return 0;
