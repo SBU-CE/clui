@@ -3,6 +3,8 @@
  * @radio_nima
  * and some changes by roozbeh sharifnasab
  * @rsharifnasab
+ * and parsa noori
+ * @parsanoori
  */
 
 #ifndef _CLUI
@@ -79,6 +81,8 @@
 // below macro restores cursor to the last
 // saved position via above macro
 #define restorecursorpos() printf("\0338")
+// these two below need test on multiple 
+// terminals and OSes
 #define playbeep() printf("\07")
 #define ansescape() printf("\033[c")
 
