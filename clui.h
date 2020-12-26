@@ -66,26 +66,6 @@
 #define COLOR_ORANGE_2 14
 #define COLOR_ORANGE_3 15
 
-/*
- * ANSI escape sequences
- * Visit:
- * http://ascii-table.com/ansi-escape-sequences.php
- * for more details
- */
-#define cursorup(n) printf("\033[%dA", (n))
-#define cursordown(n) printf("\033[%dB", (n))
-#define cursorforward(n) printf("\033[%dC", (n))
-#define cursorbackward(n) printf("\033[%dD", (n))
-#define cursortopos(r, c) printf("\033[%d;%dH", (r), (c))
-#define savecursorpos() printf("\0337")
-// below macro restores cursor to the last
-// saved position via above macro
-#define restorecursorpos() printf("\0338")
-// these two below need test on multiple 
-// terminals and OSes
-#define playbeep() printf("\07")
-#define ansescape() printf("\033[c")
-
 static void enable_raw_mode()
 {
 #if OS_UNIX
@@ -219,6 +199,12 @@ int getch()
 }
 #endif
 
+// IMPORTANT NOTE: all functions below 
+// are ANSI escape codes based on VT100
+// if your terminal doesn't implement
+// VT100 you may get into bit troubles
+// visit link below for guide:
+// http://ascii-table.com/ansi-escape-sequences.php
 void delay(int milli_seconds)
 {
 #if OS_UNIX
@@ -283,6 +269,46 @@ int get_pos(int* y, int* x)
 		*y = *y + (buf[i] - '0') * pow;
 
 	return 0;
+}
+
+void corsur_up(int n)
+{
+	printf("\033[%dA", n);
+}
+
+void cursor_down(int n)
+{
+	printf("\033[%dB", n);
+}
+
+void cursor_forward(int n)
+{
+	printf("\033[%dC", n);
+}
+
+void cursor_backward(int n)
+{
+	printf("\033[%dD", n);
+}
+
+void cursor_to_pos(int row, int col)
+{
+	printf("\033[%d;%dH", row, col);
+}
+
+void save_cursor()
+{
+	printf("\0337");
+}
+
+void restore_cursor()
+{
+	printf("\0338");
+}
+
+void play_beep()
+{
+	printf("\07");
 }
 
 #endif
