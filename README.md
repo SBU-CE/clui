@@ -1,9 +1,9 @@
 # clui
 simple cross-platform library for doing terminal things.
 
-to learn more about functions, view `sample.c` or `sample2.c`
+To learn more about functions, view `sample1.c` or `sample2.c`
 
 
-### it is guranteed that library work on both windows and linux with C or C++
+### library and sample codes are tested windows (mingw) and unix (gcc,clang) with both C & C++ codes.
 
 
