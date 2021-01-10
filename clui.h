@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 /*
  * includes for windows
@@ -36,7 +37,6 @@
 #define OS_UNIX 1
 #include <sys/ioctl.h>
 #include <termios.h>
-#include <unistd.h>
 
 #endif
 
@@ -69,10 +69,10 @@
 static void enable_raw_mode()
 {
 #if OS_UNIX
-	struct termios term;
-	tcgetattr(0, &term);
-	term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
-	tcsetattr(0, TCSANOW, &term);
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
+    tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
@@ -81,10 +81,10 @@ static void enable_raw_mode()
 static void disable_raw_mode()
 {
 #if OS_UNIX
-	struct termios term;
-	tcgetattr(0, &term);
-	term.c_lflag |= ICANON | ECHO;
-	tcsetattr(0, TCSANOW, &term);
+    struct termios term;
+    tcgetattr(0, &term);
+    term.c_lflag |= ICANON | ECHO;
+    tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
@@ -97,11 +97,11 @@ static void disable_raw_mode()
 bool is_keyboard_hit()
 {
 #if OS_UNIX
-	int byteswaiting;
-	ioctl(0, FIONREAD, &byteswaiting);
-	return byteswaiting > 0;
+    int byteswaiting;
+    ioctl(0, FIONREAD, &byteswaiting);
+    return byteswaiting > 0;
 #else
-	return kbhit();
+    return kbhit();
 #endif
 }
 
@@ -114,13 +114,11 @@ bool is_keyboard_hit()
 void clear_screen()
 {
 #if OS_UNIX
-	system("clear");
+    system("clear");
 #else
-	system("CLS");
+    system("CLS");
 #endif
 }
-
-typedef unsigned char rgb_range;
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
@@ -130,9 +128,12 @@ typedef unsigned char rgb_range;
  * tested in linux terminals
  * and new Windows10 cmd and powershell
  */
-void change_color_rgb(rgb_range r, rgb_range g, rgb_range b)
+void change_color_rgb(int r, int g, int b)
 {
-	printf("\033[38;2;%c;%c;%cm", r, g, b);
+    if (0 <= r && r <= 255
+        && 0 <= g && g <= 255
+        && 0 <= b && b <= 255)
+        printf("\033[38;2;%d;%d;%dm", r, g, b);
 }
 
 /*
@@ -141,30 +142,30 @@ void change_color_rgb(rgb_range r, rgb_range g, rgb_range b)
  */
 void change_color(int color)
 {
-	printf("\033");
 
-	const char* colors[] = {
-		"[0m",
-		"[0;31m",
-		"[1;31m",
-		"[0;32m",
-		"[1;32m",
-		"[0;33m",
-		"[1;33m",
-		"[0;34m",
-		"[1;34m",
-		"[0;35m",
-		"[1;35m",
-		"[0;36m",
-		"[1;36m",
+    const char* colors[] = {
+        "[0m",
+        "[0;31m",
+        "[1;31m",
+        "[0;32m",
+        "[1;32m",
+        "[0;33m",
+        "[1;33m",
+        "[0;34m",
+        "[1;34m",
+        "[0;35m",
+        "[1;35m",
+        "[0;36m",
+        "[1;36m",
 
-		"[38;5;202m",
-		"[38;5;208m",
-		"[38;5;214m"
-	};
-	if (color >= 0 && color <= 15) {
-		printf("%s", colors[color]);
-	}
+        "[38;5;202m",
+        "[38;5;208m",
+        "[38;5;214m"
+    };
+    if (color >= 0 && color <= 15) {
+        printf("\033");
+        printf("%s", colors[color]);
+    }
 }
 
 /*
@@ -172,7 +173,7 @@ void change_color(int color)
  */
 void reset_color()
 {
-	change_color(COLOR_DEFAULT);
+    change_color(COLOR_DEFAULT);
 }
 
 /*
@@ -183,11 +184,8 @@ void reset_color()
  */
 void flush()
 {
-	fflush(stdout);
-#if OS_UNIX
-#else
-	fflush(stderr);
-#endif
+    fflush(stdout);
+    fflush(stderr);
 }
 
 /*
@@ -195,15 +193,17 @@ void flush()
  */
 void quit()
 {
-	reset_color();
-	disable_raw_mode();
-	clear_screen();
-	exit(0);
+    reset_color();
+    disable_raw_mode();
+    clear_screen();
+    exit(0);
 }
 
 static void sigint_handler(int dummy)
 {
-	quit();
+    // to get rid of unused-parameter warning
+    (void)dummy;
+    quit();
 }
 
 /*
@@ -212,9 +212,9 @@ static void sigint_handler(int dummy)
  */
 void init_clui()
 {
-	clear_screen();
-	signal(SIGINT, sigint_handler);
-	enable_raw_mode();
+    clear_screen();
+    signal(SIGINT, sigint_handler);
+    enable_raw_mode();
 }
 
 /*
@@ -226,61 +226,61 @@ void init_clui()
 #if OS_UNIX
 int getch()
 {
-	struct termios oldattr, newattr;
-	int ch;
-	tcgetattr(STDIN_FILENO, &oldattr);
-	newattr = oldattr;
-	newattr.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
-	ch = getchar();
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
-	return ch;
+    struct termios oldattr, newattr;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldattr);
+    newattr = oldattr;
+    newattr.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+    return ch;
 }
+#endif
 
 /*
  * a cross platform function to
  * suspends execution for some 
  * milli seconds
  */
-#endif
 void delay(size_t milli_seconds)
 {
 #if OS_UNIX
-	usleep(1000 * milli_seconds);
+    usleep(1000 * milli_seconds);
 #else
-	Sleep(milli_seconds);
+    Sleep(milli_seconds);
 #endif
 }
 
 /*
  * returns the windows rows
  */
-size_t get_window_rows()
+int get_window_rows()
 {
 #if OS_UNIX
-	struct winsize max;
-	ioctl(0, TIOCGWINSZ, &max);
-	return max.ws_row;
+    struct winsize max;
+    ioctl(0, TIOCGWINSZ, &max);
+    return (int) max.ws_row;
 #else
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-	return csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return (int) (csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
 #endif
 }
 
 /*
  * returns the window cols
  */
-size_t get_window_cols()
+int get_window_cols()
 {
 #if OS_UNIX
-	struct winsize max;
-	ioctl(0, TIOCGWINSZ, &max);
-	return max.ws_col;
+    struct winsize max;
+    ioctl(0, TIOCGWINSZ, &max);
+    return (int) max.ws_col;
 #else
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-	return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return (int) (csbi.srWindow.Right - csbi.srWindow.Left + 1);
 #endif
 }
 
@@ -288,8 +288,8 @@ size_t get_window_cols()
  * a type to store window size
  */
 typedef struct {
-	size_t row;
-	size_t col;
+    size_t row;
+    size_t col;
 } window_size;
 
 /*
@@ -317,13 +317,13 @@ typedef struct {
  */
 int get_window_size(window_size* size)
 {
-	if (!size)
-		return 1;
+    if (!size)
+        return 1;
 
-	size->col = get_window_cols();
-	size->row = get_window_rows();
+    size->col = get_window_cols();
+    size->row = get_window_rows();
 
-	return 0;
+    return 0;
 }
 
 typedef window_size cursor_pos;
@@ -336,83 +336,83 @@ typedef window_size cursor_pos;
  */
 int get_cursor_pos(cursor_pos* pos)
 {
-	int y = 0, x = 0;
+    int y = 0, x = 0;
 
-	char buf[30] = { 0 };
-	int i, pow;
-	char ch;
+    char buf[30] = { 0 };
+    int i, pow;
+    char ch;
 
-	//asking for position via ANSI
-	//escape sequence
-	write(1, "\033[6n", 4);
+    //asking for position via ANSI
+    //escape sequence
+    write(1, "\033[6n", 4);
 
-	for (i = 0, ch = 0; ch != 'R'; i++)
-		if (!read(0, buf + i, 1))
-			return 1;
+    for (i = 0, ch = 0; ch != 'R'; i++)
+        if (!read(0, buf + i, 1))
+            return 1;
 
-	if (i < 2)
-		return 1;
+    if (i < 2)
+        return 1;
 
-	// parsing the output
-	for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
-		x = x + (buf[i] - '0') * pow;
+    // parsing the output
+    for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
+        x = x + (buf[i] - '0') * pow;
 
-	for (i--, pow = 1; buf[i] != '['; i--, pow *= 10)
-		y = y + (buf[i] - '0') * pow;
+    for (i--, pow = 1; buf[i] != '['; i--, pow *= 10)
+        y = y + (buf[i] - '0') * pow;
 
-	pos->row = y;
-	pos->col = x;
+    pos->row = y;
+    pos->col = x;
 
-	return 0;
+    return 0;
 }
 
 /* 
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor up n times
  */
-void corsur_up(size_t n)
+void corsur_up(int n)
 {
-	printf("\033[%zuA", n);
+    printf("\033[%dA", n);
 }
 
 /* 
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor down n times
  */
-void cursor_down(size_t n)
+void cursor_down(int n)
 {
-	printf("\033[%zuB", n);
+    printf("\033[%dB", n);
 }
 /* 
  * NOTE: NEEDS ANSI SUPPORT
  * moves corsur forward n time
  */
-void cursor_forward(size_t n)
+void cursor_forward(int n)
 {
-	printf("\033[%zuC", n);
+    printf("\033[%dC", n);
 }
 
 /* 
 * NOTE: NEEDS ANSI SUPPORT
 * moves corsur backwards n time
 */
-void cursor_backward(size_t n)
+void cursor_backward(int n)
 {
-	printf("\033[%zuD", n);
+    printf("\033[%dD", n);
 }
 
 /* 
  * NOTE: NEEDS ANSI SUPPORT
  * moves corsur to the given position
  */
-void cursor_to_pos(size_t row, size_t col)
+void cursor_to_pos(int row, int col)
 {
-	printf("\033[%zu;%zuH", row, col);
+    printf("\033[%d;%dH", row, col);
 }
 
 void cursor_to_cursor_pos(const cursor_pos* pos)
 {
-	cursor_to_pos(pos->row,pos->col);
+    cursor_to_pos(pos->row, pos->col);
 }
 
 /* 
@@ -421,7 +421,7 @@ void cursor_to_cursor_pos(const cursor_pos* pos)
  */
 void save_cursor()
 {
-	printf("\0337");
+    printf("\0337");
 }
 
 /*
@@ -431,7 +431,7 @@ void save_cursor()
  */
 void restore_cursor()
 {
-	printf("\0338");
+    printf("\0338");
 }
 
 /*
@@ -440,7 +440,7 @@ void restore_cursor()
  */
 void play_beep()
 {
-	printf("\07");
+    printf("\07");
 }
 
 #endif

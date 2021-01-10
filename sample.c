@@ -1,6 +1,7 @@
 #include "clui.h"
 
-int main() {
+int main()
+{
     // initialize library
     init_clui();
 
@@ -10,18 +11,15 @@ int main() {
     printf("testing delay\nit should take 3 seconds\n");
     delay(3000); // wait for 3 seconds
 
-
     // get size of terminal with 2 functions for rows and cols
-    printf("number of terminal cols: %zu\n",  get_window_cols() );
-    printf("number of terminal rows: %zu\n",  get_window_rows() );
-
+    printf("number of terminal cols: %d\n", get_window_cols());
+    printf("number of terminal rows: %d\n", get_window_rows());
 
     // change print color
     // with RGB
-    change_color_rgb(150,10,15);
-    printf("this text is some color \n");
+    change_color_rgb(150, 10, 15);
+    printf("this text is red\n");
     reset_color();
-
 
     printf("press any key to see what happen!\n");
     printf("and press esc for exit\n");
@@ -39,10 +37,11 @@ int main() {
 
         // we only get character if a key is pressed
         // if no key is pressed, we continue the while
-        if( is_keyboard_hit() ){
+        if (is_keyboard_hit()) {
             char t = getch();
-            if (t == 27) break;
-            printf("%c\n", t);
+            if (t == 27)
+                break;
+            else printf("<%c>", t);
         }
     }
 
