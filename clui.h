@@ -90,6 +90,10 @@ static void disable_raw_mode()
 #endif
 }
 
+/*
+ * A cross platform functin to detect 
+ * whether keyboard is hit
+ */
 bool is_keyboard_hit()
 {
 #if OS_UNIX
@@ -101,6 +105,12 @@ bool is_keyboard_hit()
 #endif
 }
 
+/*
+ * Simply clears the terminal screen
+ * Uses OS'es command suited for this
+ * action to prevent ANSI's problems on
+ * different OSes
+ */
 void clear_screen()
 {
 #if OS_UNIX
@@ -110,19 +120,23 @@ void clear_screen()
 #endif
 }
 
+typedef unsigned char rgb_range;
+
 /*
+ * NOTE: NEEDS ANSI SUPPORT
  * change output color of terminal
  * by RGB input
  * this will only work for 24-bit terminals
  * tested in linux terminals
  * and new Windows10 cmd and powershell
  */
-void change_color_rgb(int r, int g, int b)
+void change_color_rgb(rgb_range r, rgb_range g, rgb_range b)
 {
-	printf("\033[38;2;%d;%d;%dm", r, g, b);
+	printf("\033[38;2;%c;%c;%cm", r, g, b);
 }
 
 /*
+ * NOTE: NEEDS ANSI SUPPORT
  * change color in 8 bit terminal
  */
 void change_color(int color)
@@ -153,17 +167,32 @@ void change_color(int color)
 	}
 }
 
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ */
 void reset_color()
 {
 	change_color(COLOR_DEFAULT);
 }
 
+/*
+ * the file stdout is line buffered hence
+ * if you want to print out to terminal and
+ * remain in the same line you should
+ * use this function
+ */
 void flush()
 {
 	fflush(stdout);
+#if OS_UNIX
+#else
 	fflush(stderr);
+#endif
 }
 
+/*
+ * invoke when you're done with this library
+ */
 void quit()
 {
 	reset_color();
@@ -172,11 +201,15 @@ void quit()
 	exit(0);
 }
 
-void sigint_handler(int dummy)
+static void sigint_handler(int dummy)
 {
 	quit();
 }
 
+/*
+ * invoke before using other functions in this 
+ * library
+ */
 void init_clui()
 {
 	clear_screen();
@@ -184,6 +217,12 @@ void init_clui()
 	enable_raw_mode();
 }
 
+/*
+ * since getchar is a nonstandard function 
+ * this funtion was implemented.
+ * Note that windows has this function
+ * implicitly
+ */
 #if OS_UNIX
 int getch()
 {
@@ -197,15 +236,14 @@ int getch()
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
 	return ch;
 }
-#endif
 
-// IMPORTANT NOTE: all functions below 
-// are ANSI escape codes based on VT100
-// if your terminal doesn't implement
-// VT100 you may get into bit troubles
-// visit link below for guide:
-// http://ascii-table.com/ansi-escape-sequences.php
-void delay(int milli_seconds)
+/*
+ * a cross platform function to
+ * suspends execution for some 
+ * milli seconds
+ */
+#endif
+void delay(size_t milli_seconds)
 {
 #if OS_UNIX
 	usleep(1000 * milli_seconds);
@@ -214,7 +252,10 @@ void delay(int milli_seconds)
 #endif
 }
 
-int get_window_rows()
+/*
+ * returns the windows rows
+ */
+size_t get_window_rows()
 {
 #if OS_UNIX
 	struct winsize max;
@@ -227,7 +268,10 @@ int get_window_rows()
 #endif
 }
 
-int get_window_cols()
+/*
+ * returns the window cols
+ */
+size_t get_window_cols()
 {
 #if OS_UNIX
 	struct winsize max;
@@ -240,15 +284,63 @@ int get_window_cols()
 #endif
 }
 
-int get_pos(int* y, int* x)
+/*
+ * a type to store window size
+ */
+typedef struct {
+	size_t row;
+	size_t col;
+} window_size;
+
+/*
+ * a C-Style function to get window size
+ * this is a common flow in C programming 
+ * language. Where an int is returned as
+ * a status result of function and the 
+ * actual return is filled in a pointer
+ * given as a parameter to the function
+ * As a convention zero is known to be the
+ * success code of function since it can be
+ * used to be placed in if without any changes
+ * and if program jumps into the if it means 
+ * that the function have had a problem.
+ * The convention is used here and in the 
+ * next function too :)
+ *
+ * The actual output value of this function 
+ * is stored in the size parameter you give 
+ * to it as a parameter. Make note that it accepts
+ * a pointer to the struct defined above. Hence 
+ * you have to declare a window_size variable
+ * and pass it's address as a pointer to this
+ * function.
+ */
+int get_window_size(window_size* size)
 {
+	if (!size)
+		return 1;
+
+	size->col = get_window_cols();
+	size->row = get_window_rows();
+
+	return 0;
+}
+
+typedef window_size cursor_pos;
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * gives the position of the cursor filled in
+ * the object where the pos pointer points to.
+ * zero is returned on success
+ */
+int get_cursor_pos(cursor_pos* pos)
+{
+	int y = 0, x = 0;
 
 	char buf[30] = { 0 };
-	int ret, i, pow;
+	int i, pow;
 	char ch;
-
-	*y = 0;
-	*x = 0;
 
 	//asking for position via ANSI
 	//escape sequence
@@ -263,49 +355,89 @@ int get_pos(int* y, int* x)
 
 	// parsing the output
 	for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
-		*x = *x + (buf[i] - '0') * pow;
+		x = x + (buf[i] - '0') * pow;
 
 	for (i--, pow = 1; buf[i] != '['; i--, pow *= 10)
-		*y = *y + (buf[i] - '0') * pow;
+		y = y + (buf[i] - '0') * pow;
+
+	pos->row = y;
+	pos->col = x;
 
 	return 0;
 }
 
-void corsur_up(int n)
+/* 
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves cursor up n times
+ */
+void corsur_up(size_t n)
 {
-	printf("\033[%dA", n);
+	printf("\033[%zuA", n);
 }
 
-void cursor_down(int n)
+/* 
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves cursor down n times
+ */
+void cursor_down(size_t n)
 {
-	printf("\033[%dB", n);
+	printf("\033[%zuB", n);
+}
+/* 
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves corsur forward n time
+ */
+void cursor_forward(size_t n)
+{
+	printf("\033[%zuC", n);
 }
 
-void cursor_forward(int n)
+/* 
+* NOTE: NEEDS ANSI SUPPORT
+* moves corsur backwards n time
+*/
+void cursor_backward(size_t n)
 {
-	printf("\033[%dC", n);
+	printf("\033[%zuD", n);
 }
 
-void cursor_backward(int n)
+/* 
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves corsur to the given position
+ */
+void cursor_to_pos(size_t row, size_t col)
 {
-	printf("\033[%dD", n);
+	printf("\033[%zu;%zuH", row, col);
 }
 
-void cursor_to_pos(int row, int col)
+void cursor_to_cursor_pos(const cursor_pos* pos)
 {
-	printf("\033[%d;%dH", row, col);
+	cursor_to_pos(pos->row,pos->col);
 }
 
+/* 
+ * NOTE: NEEDS ANSI SUPPORT
+ * saves cursor position for further use
+ */
 void save_cursor()
 {
 	printf("\0337");
 }
 
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * restors cursor to the last saved 
+ * position
+ */
 void restore_cursor()
 {
 	printf("\0338");
 }
 
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * plays beep! :)
+ */
 void play_beep()
 {
 	printf("\07");
