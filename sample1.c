@@ -39,9 +39,12 @@ int main()
         // if no key is pressed, we continue the while
         if (is_keyboard_hit()) {
             char t = getch();
-            if (t == 27)
+            if (t == 27) {
                 break;
-            else printf("<%c>", t);
+            } else {
+                printf("<%c>", t);
+                play_beep();
+            }
         }
     }
 
