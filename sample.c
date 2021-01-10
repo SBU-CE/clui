@@ -12,8 +12,8 @@ int main() {
 
 
     // get size of terminal with 2 functions for rows and cols
-    printf("number of terminal cols: %d\n",  get_window_cols() );
-    printf("number of terminal rows: %d\n",  get_window_rows() );
+    printf("number of terminal cols: %zu\n",  get_window_cols() );
+    printf("number of terminal rows: %zu\n",  get_window_rows() );
 
 
     // change print color
