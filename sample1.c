@@ -11,6 +11,11 @@ int main()
     printf("testing delay\nit should take 3 seconds\n");
     delay(3000); // wait for 3 seconds
 
+    printf("how are you?\n");
+    char *str = calloc(100, sizeof(char));
+    scanf("%s", str);
+    printf("you are : \"%s\"\n", str);
+
     // get size of terminal with 2 functions for rows and cols
     printf("number of terminal cols: %d\n", get_window_cols());
     printf("number of terminal rows: %d\n", get_window_rows());

@@ -71,7 +71,7 @@ static void enable_raw_mode()
 #if OS_UNIX
     struct termios term;
     tcgetattr(0, &term);
-    term.c_lflag &= ~(ICANON | ECHO); // Disable echo as well
+    term.c_lflag &= ~(ICANON);
     tcsetattr(0, TCSANOW, &term);
 #else
 
