@@ -69,10 +69,10 @@
 static void enable_raw_mode()
 {
 #if OS_UNIX
-    struct termios term;
-    tcgetattr(0, &term);
-    term.c_lflag &= ~(ICANON);
-    tcsetattr(0, TCSANOW, &term);
+    //struct termios term;
+    //tcgetattr(0, &term);
+    //term.c_lflag &= ~(ICANON);
+    //tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
@@ -90,6 +90,7 @@ static void disable_raw_mode()
 #endif
 }
 
+#if 0
 /*
  * A cross platform functin to detect 
  * whether keyboard is hit
@@ -104,6 +105,7 @@ bool is_keyboard_hit()
     return kbhit();
 #endif
 }
+#endif
 
 /*
  * Simply clears the terminal screen
