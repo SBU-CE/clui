@@ -66,25 +66,36 @@
 #define COLOR_ORANGE_2 14
 #define COLOR_ORANGE_3 15
 
-static void enable_raw_mode()
-{
+/*
+ * define colors that can be chosen
+ * in change_background_color function
+ */
+#define BACKGROUND_DEFAULT 0
+#define BACKGROUND_BLUE 1
+#define BACKGROUND_CYAN 2
+#define BACKGROUND_GREEN 3
+#define BACKGROUND_PURPLE 4
+#define BACKGROUND_RED 5
+#define BACKGROUND_WHITE 6
+#define BACKGROUND_YELLOW 7
+
+static void enable_raw_mode() {
 #if OS_UNIX
-    //struct termios term;
-    //tcgetattr(0, &term);
-    //term.c_lflag &= ~(ICANON);
-    //tcsetattr(0, TCSANOW, &term);
+  // struct termios term;
+  // tcgetattr(0, &term);
+  // term.c_lflag &= ~(ICANON);
+  // tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
 }
 
-static void disable_raw_mode()
-{
+static void disable_raw_mode() {
 #if OS_UNIX
-    struct termios term;
-    tcgetattr(0, &term);
-    term.c_lflag |= ICANON | ECHO;
-    tcsetattr(0, TCSANOW, &term);
+  struct termios term;
+  tcgetattr(0, &term);
+  term.c_lflag |= ICANON | ECHO;
+  tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
@@ -92,7 +103,7 @@ static void disable_raw_mode()
 
 #if 0
 /*
- * A cross platform functin to detect 
+ * A cross platform functin to detect
  * whether keyboard is hit
  */
 bool is_keyboard_hit()
@@ -113,12 +124,11 @@ bool is_keyboard_hit()
  * action to prevent ANSI's problems on
  * different OSes
  */
-void clear_screen()
-{
+void clear_screen() {
 #if OS_UNIX
-    system("clear");
+  system("clear");
 #else
-    system("CLS");
+  system("CLS");
 #endif
 }
 
@@ -130,53 +140,43 @@ void clear_screen()
  * tested in linux terminals
  * and new Windows10 cmd and powershell
  */
-void change_color_rgb(int r, int g, int b)
-{
-    if (0 <= r && r <= 255
-        && 0 <= g && g <= 255
-        && 0 <= b && b <= 255)
-        printf("\033[38;2;%d;%d;%dm", r, g, b);
+void change_color_rgb(int r, int g, int b) {
+  if (0 <= r && r <= 255 && 0 <= g && g <= 255 && 0 <= b && b <= 255)
+    printf("\033[38;2;%d;%d;%dm", r, g, b);
 }
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * change color in 8 bit terminal
  */
-void change_color(int color)
-{
+void change_color(int color) {
 
-    const char* colors[] = {
-        "[0m",
-        "[0;31m",
-        "[1;31m",
-        "[0;32m",
-        "[1;32m",
-        "[0;33m",
-        "[1;33m",
-        "[0;34m",
-        "[1;34m",
-        "[0;35m",
-        "[1;35m",
-        "[0;36m",
-        "[1;36m",
+  const char *colors[] = {"[0m",    "[0;31m",     "[1;31m",     "[0;32m",
+                          "[1;32m", "[0;33m",     "[1;33m",     "[0;34m",
+                          "[1;34m", "[0;35m",     "[1;35m",     "[0;36m",
+                          "[1;36m", "[38;5;202m", "[38;5;208m", "[38;5;214m"};
 
-        "[38;5;202m",
-        "[38;5;208m",
-        "[38;5;214m"
-    };
-    if (color >= 0 && color <= 15) {
-        printf("\033");
-        printf("%s", colors[color]);
-    }
+  if (color >= 0 && color <= 15) {
+    printf("\033");
+    printf("%s", colors[color]);
+  }
+}
+
+void change_background_color(int color) {
+
+  const char *colors[] = {"[40m", "[44m", "[46m", "[42m",
+                          "[45m", "[41m", "[47m", "[43m"};
+
+  if (color >= 0 && color <= 7) {
+    printf("\033");
+    printf("%s", colors[color]);
+  }
 }
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  */
-void reset_color()
-{
-    change_color(COLOR_DEFAULT);
-}
+void reset_color() { change_color(COLOR_DEFAULT); }
 
 /*
  * the file stdout is line buffered hence
@@ -184,105 +184,97 @@ void reset_color()
  * remain in the same line you should
  * use this function
  */
-void flush()
-{
-    fflush(stdout);
-    fflush(stderr);
+void flush() {
+  fflush(stdout);
+  fflush(stderr);
 }
 
 /*
  * invoke when you're done with this library
  */
-void quit()
-{
-    reset_color();
-    disable_raw_mode();
-    clear_screen();
-    exit(0);
+void quit() {
+  reset_color();
+  disable_raw_mode();
+  clear_screen();
+  exit(0);
 }
 
-static void sigint_handler(int dummy)
-{
-    // to get rid of unused-parameter warning
-    (void)dummy;
-    quit();
+static void sigint_handler(int dummy) {
+  // to get rid of unused-parameter warning
+  (void)dummy;
+  quit();
 }
 
 /*
- * invoke before using other functions in this 
+ * invoke before using other functions in this
  * library
  */
-void init_clui()
-{
-    clear_screen();
-    signal(SIGINT, sigint_handler);
-    enable_raw_mode();
+void init_clui() {
+  clear_screen();
+  signal(SIGINT, sigint_handler);
+  enable_raw_mode();
 }
 
 /*
- * since getchar is a nonstandard function 
+ * since getchar is a nonstandard function
  * this funtion was implemented.
  * Note that windows has this function
  * implicitly
  */
 #if OS_UNIX
-int getch()
-{
-    struct termios oldattr, newattr;
-    int ch;
-    tcgetattr(STDIN_FILENO, &oldattr);
-    newattr = oldattr;
-    newattr.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
-    return ch;
+int getch() {
+  struct termios oldattr, newattr;
+  int ch;
+  tcgetattr(STDIN_FILENO, &oldattr);
+  newattr = oldattr;
+  newattr.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+  ch = getchar();
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+  return ch;
 }
 #endif
 
 /*
  * a cross platform function to
- * suspends execution for some 
+ * suspends execution for some
  * milli seconds
  */
-void delay(size_t milli_seconds)
-{
+void delay(size_t milli_seconds) {
 #if OS_UNIX
-    usleep(1000 * milli_seconds);
+  usleep(1000 * milli_seconds);
 #else
-    Sleep(milli_seconds);
+  Sleep(milli_seconds);
 #endif
 }
 
 /*
  * returns the windows rows
  */
-int get_window_rows()
-{
+int get_window_rows() {
 #if OS_UNIX
-    struct winsize max;
-    ioctl(0, TIOCGWINSZ, &max);
-    return (int) max.ws_row;
+  struct winsize max;
+  ioctl(0, TIOCGWINSZ, &max);
+  return (int)max.ws_row;
 #else
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    return (int) (csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+  return (int)(csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
 #endif
 }
 
 /*
  * returns the window cols
  */
-int get_window_cols()
-{
+int get_window_cols() {
 #if OS_UNIX
-    struct winsize max;
-    ioctl(0, TIOCGWINSZ, &max);
-    return (int) max.ws_col;
+  struct winsize max;
+  ioctl(0, TIOCGWINSZ, &max);
+  return (int)max.ws_col;
 #else
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    return (int) (csbi.srWindow.Right - csbi.srWindow.Left + 1);
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+  return (int)(csbi.srWindow.Right - csbi.srWindow.Left + 1);
 #endif
 }
 
@@ -290,42 +282,41 @@ int get_window_cols()
  * a type to store window size
  */
 typedef struct {
-    size_t row;
-    size_t col;
+  size_t row;
+  size_t col;
 } window_size;
 
 /*
  * a C-Style function to get window size
- * this is a common flow in C programming 
+ * this is a common flow in C programming
  * language. Where an int is returned as
- * a status result of function and the 
+ * a status result of function and the
  * actual return is filled in a pointer
  * given as a parameter to the function
  * As a convention zero is known to be the
  * success code of function since it can be
  * used to be placed in if without any changes
- * and if program jumps into the if it means 
+ * and if program jumps into the if it means
  * that the function have had a problem.
- * The convention is used here and in the 
+ * The convention is used here and in the
  * next function too :)
  *
- * The actual output value of this function 
- * is stored in the size parameter you give 
+ * The actual output value of this function
+ * is stored in the size parameter you give
  * to it as a parameter. Make note that it accepts
- * a pointer to the struct defined above. Hence 
+ * a pointer to the struct defined above. Hence
  * you have to declare a window_size variable
  * and pass it's address as a pointer to this
  * function.
  */
-int get_window_size(window_size* size)
-{
-    if (!size)
-        return 1;
+int get_window_size(window_size *size) {
+  if (!size)
+    return 1;
 
-    size->col = get_window_cols();
-    size->row = get_window_rows();
+  size->col = get_window_cols();
+  size->row = get_window_rows();
 
-    return 0;
+  return 0;
 }
 
 typedef window_size cursor_pos;
@@ -336,113 +327,87 @@ typedef window_size cursor_pos;
  * the object where the pos pointer points to.
  * zero is returned on success
  */
-int get_cursor_pos(cursor_pos* pos)
-{
-    int y = 0, x = 0;
+int get_cursor_pos(cursor_pos *pos) {
+  int y = 0, x = 0;
 
-    char buf[30] = { 0 };
-    int i, pow;
-    char ch;
+  char buf[30] = {0};
+  int i, pow;
+  char ch;
 
-    //asking for position via ANSI
-    //escape sequence
-    write(1, "\033[6n", 4);
+  // asking for position via ANSI
+  // escape sequence
+  write(1, "\033[6n", 4);
 
-    for (i = 0, ch = 0; ch != 'R'; i++)
-        if (!read(0, buf + i, 1))
-            return 1;
+  for (i = 0, ch = 0; ch != 'R'; i++)
+    if (!read(0, buf + i, 1))
+      return 1;
 
-    if (i < 2)
-        return 1;
+  if (i < 2)
+    return 1;
 
-    // parsing the output
-    for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
-        x = x + (buf[i] - '0') * pow;
+  // parsing the output
+  for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
+    x = x + (buf[i] - '0') * pow;
 
-    for (i--, pow = 1; buf[i] != '['; i--, pow *= 10)
-        y = y + (buf[i] - '0') * pow;
+  for (i--, pow = 1; buf[i] != '['; i--, pow *= 10)
+    y = y + (buf[i] - '0') * pow;
 
-    pos->row = y;
-    pos->col = x;
+  pos->row = y;
+  pos->col = x;
 
-    return 0;
-}
-
-/* 
- * NOTE: NEEDS ANSI SUPPORT
- * moves cursor up n times
- */
-void corsur_up(int n)
-{
-    printf("\033[%dA", n);
-}
-
-/* 
- * NOTE: NEEDS ANSI SUPPORT
- * moves cursor down n times
- */
-void cursor_down(int n)
-{
-    printf("\033[%dB", n);
-}
-/* 
- * NOTE: NEEDS ANSI SUPPORT
- * moves corsur forward n time
- */
-void cursor_forward(int n)
-{
-    printf("\033[%dC", n);
-}
-
-/* 
-* NOTE: NEEDS ANSI SUPPORT
-* moves corsur backwards n time
-*/
-void cursor_backward(int n)
-{
-    printf("\033[%dD", n);
-}
-
-/* 
- * NOTE: NEEDS ANSI SUPPORT
- * moves corsur to the given position
- */
-void cursor_to_pos(int row, int col)
-{
-    printf("\033[%d;%dH", row, col);
-}
-
-void cursor_to_cursor_pos(const cursor_pos* pos)
-{
-    cursor_to_pos(pos->row, pos->col);
-}
-
-/* 
- * NOTE: NEEDS ANSI SUPPORT
- * saves cursor position for further use
- */
-void save_cursor()
-{
-    printf("\0337");
+  return 0;
 }
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
- * restors cursor to the last saved 
+ * moves cursor up n times
+ */
+void corsur_up(int n) { printf("\033[%dA", n); }
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves cursor down n times
+ */
+void cursor_down(int n) { printf("\033[%dB", n); }
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves corsur forward n time
+ */
+void cursor_forward(int n) { printf("\033[%dC", n); }
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves corsur backwards n time
+ */
+void cursor_backward(int n) { printf("\033[%dD", n); }
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * moves corsur to the given position
+ */
+void cursor_to_pos(int row, int col) { printf("\033[%d;%dH", row, col); }
+
+void cursor_to_cursor_pos(const cursor_pos *pos) {
+  cursor_to_pos(pos->row, pos->col);
+}
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * saves cursor position for further use
+ */
+void save_cursor() { printf("\0337"); }
+
+/*
+ * NOTE: NEEDS ANSI SUPPORT
+ * restors cursor to the last saved
  * position
  */
-void restore_cursor()
-{
-    printf("\0338");
-}
+void restore_cursor() { printf("\0338"); }
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * plays beep! :)
  */
-void play_beep()
-{
-    printf("\07");
-}
+void play_beep() { printf("\07"); }
 
 #endif
