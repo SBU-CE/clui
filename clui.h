@@ -17,7 +17,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 /*
  * includes for windows
@@ -37,7 +36,7 @@
 #define OS_UNIX 1
 #include <sys/ioctl.h>
 #include <termios.h>
-
+#include <unistd.h>
 #endif
 
 /*
@@ -338,9 +337,11 @@ int get_cursor_pos(cursor_pos *pos) {
   // escape sequence
   write(1, "\033[6n", 4);
 
-  for (i = 0, ch = 0; ch != 'R'; i++)
+  for (i = 0, ch = 0; ch != 'R'; i++){
     if (!read(0, buf + i, 1))
       return 1;
+    ch = buf[i];
+  }
 
   if (i < 2)
     return 1;
