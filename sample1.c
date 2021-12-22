@@ -7,6 +7,7 @@ int main()
     // get size of terminal with 2 functions for rows and cols
     printf("number of terminal cols: %d\n", get_window_cols());
     printf("number of terminal rows: %d\n", get_window_rows());
+    printf("cursor pos (x:%d, y:%d)\n", get_cursor_x(), get_cursor_y());
 
     // change print color
     // with RGB

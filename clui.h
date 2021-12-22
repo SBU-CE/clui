@@ -244,9 +244,6 @@ int getch()
 }
 #endif
 
-
-
-
 /*
  * a cross platform function to
  * suspends execution for some
@@ -292,76 +289,63 @@ int get_window_cols()
     return (int)(csbi.srWindow.Right - csbi.srWindow.Left + 1);
 #endif
 }
-
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * gives the x of the cursor
+ * linux version might be a liitle slow
  */
-int get_cursor_y()
+int get_cursor_x()
 {
-    int y = 0;
+    flush();
+    int x = 0;
 #if OS_UNIX
-#if 0
-    // get cursor position linux
-    printf("\033[6n");
-    fflush(stdout);
-    char buf[32];
-    int i = 0;
-    while (1) {
-        int c = getchar();
-        if (c == ';') {
-            buf[i] = '\0';
-            i = 0;
-            y = atoi(buf);
-            break;
-        } else {
-            buf[i++] = c;
-        }
+    system("echo -ne \"\\033[6n\";\
+            read -s -d\\[ garbage;\
+            read -s -d R cursor_loc;\
+            echo $cursor_loc > /tmp/cursor_pos");
+    FILE* fp = fopen("/tmp/cursor_pos", "r");
+    if (!fp) {
+        return 0;
     }
-#endif
-#else 
+    int dummy;
+    fscanf(fp, "%d;%d", &x, &dummy);
+    fclose(fp);
+#else
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    y = csbi.dwCursorPosition.Y;
+    x = csbi.dwCursorPosition.Y + 1;
 #endif
-    return y;
+    return x;
 }
 
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * gives the x of the cursor
+ * linux version might be a little slow!
  */
-int get_cursor_x()
+int get_cursor_y()
 {
-    int x = 0;
+    flush();
+    int y = 0;
 #if OS_UNIX
-#if 0
-    char buf[30] = { 0 };
-    int i, pow;
-    char ch;
-
-    // asking for position via ANSI
-    // escape sequence
-    write(1, "\033[6n", 4);
-
-    for (i = 0, ch = 0; ch != 'R'; i++) {
-        if (!read(0, buf + i, 1))
-            return 1;
-        ch = buf[i];
+    system("echo -ne \"\\033[6n\";\
+            read -s -d\\[ garbage;\
+            read -s -d R cursor_loc;\
+            echo $cursor_loc > /tmp/cursor_pos");
+    FILE* fp = fopen("/tmp/cursor_pos", "r");
+    if (!fp) {
+        return 0;
     }
-    if (i < 2)
-        return 1;
-    // parsing the output
-    for (i -= 2, pow = 1; buf[i] != ';'; i--, pow *= 10)
-        x = x + (buf[i] - '0') * pow;
-#endif
-#else 
+    int dummy;
+    fscanf(fp, "%d;%d", &dummy, &y);
+    fclose(fp);
+#else
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    x = csbi.dwCursorPosition.X;
+    y = csbi.dwCursorPosition.X + 1;
 #endif
-    return x;
+    return y;
 }
 
 /*
