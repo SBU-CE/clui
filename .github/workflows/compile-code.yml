@@ -1,0 +1,23 @@
+name:  compile code
+on: [push]
+jobs:
+  build:
+    name: build-${{matrix.os}}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup gcc
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
+      - name: build1
+        run: gcc -Wall -Wextra -Werror -pedantic sample1.c
+      - name: build2
+        run: gcc -Wall -Wextra -Werror -pedantic sample2.c
+
+
+
