@@ -27,6 +27,10 @@
 #include <Windows.h>
 #include <conio.h>
 
+#define _NO_OLDNAMES // for MinGW compatibility
+#define getch _getch
+#define kbhit _kbhit
+
 /*
  * includes for unix-like systems
  * MacOS or linux
@@ -79,19 +83,31 @@
 #define BG_WHITE 6
 #define BG_YELLOW 7
 
-static void enable_raw_mode()
+/*
+ * the file stdout is line buffered hence
+ * if you want to print out to terminal and
+ * remain in the same line you should
+ * use this function
+ */
+void flush()
+{
+    fflush(stdout);
+    fflush(stderr);
+}
+
+void __enable_raw_mode()
 {
 #if OS_UNIX
     struct termios term;
     tcgetattr(0, &term);
-    term.c_lflag &= ~(ICANON);
+    term.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(0, TCSANOW, &term);
 #else
 
 #endif
 }
 
-static void disable_raw_mode()
+void __disable_raw_mode()
 {
 #if OS_UNIX
     struct termios term;
@@ -110,12 +126,55 @@ static void disable_raw_mode()
 bool is_keyboard_hit()
 {
 #if OS_UNIX
-    int byteswaiting;
-    ioctl(0, FIONREAD, &byteswaiting);
-    return byteswaiting > 0;
+    static struct termios oldt, newt;
+    int cnt = 0;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_iflag = 0;     // input mode
+    newt.c_oflag = 0;     // output mode
+    newt.c_cc[VMIN] = 1;  // minimum time to wait
+    newt.c_cc[VTIME] = 1; // minimum characters to wait for
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ioctl(0, FIONREAD, &cnt); // Read count
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100;
+    select(STDIN_FILENO + 1, NULL, NULL, NULL, &tv); // A small time delay
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return cnt > 0;
 #else
     return kbhit();
 #endif
+}
+
+/*
+ * since getchar is a nonstandard function
+ * this funtion was implemented.
+ * Note that windows has this function
+ * implicitly
+ */
+#if OS_UNIX
+int getch()
+{
+    struct termios oldattr, newattr;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldattr);
+    newattr = oldattr;
+    newattr.c_lflag &= ~(ICANON /* | ECHO */);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+    return ch;
+}
+#endif
+
+int nb_getch(void)
+{
+    if (is_keyboard_hit())
+        return getch();
+    else
+        return 0;
 }
 
 /*
@@ -145,8 +204,11 @@ void change_color_rgb(int r, int g, int b)
 {
     if (0 <= r && r <= 255
         && 0 <= g && g <= 255
-        && 0 <= b && b <= 255)
+        && 0 <= b && b <= 255){
         printf("\033[38;2;%d;%d;%dm", r, g, b);
+        flush();
+    }
+    
 }
 
 /*
@@ -165,6 +227,7 @@ void change_color(int color)
         printf("\033");
         printf("%s", colors[color]);
     }
+    flush();
 }
 
 void change_background_color(int color)
@@ -176,23 +239,14 @@ void change_background_color(int color)
         printf("\033");
         printf("%s", colors[color]);
     }
+    flush();
 }
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  */
-void reset_color() { change_color(COLOR_DEFAULT); }
-
-/*
- * the file stdout is line buffered hence
- * if you want to print out to terminal and
- * remain in the same line you should
- * use this function
- */
-void flush()
-{
-    fflush(stdout);
-    fflush(stderr);
+void reset_color() { 
+    change_color(COLOR_DEFAULT); 
 }
 
 /*
@@ -201,7 +255,7 @@ void flush()
 void quit()
 {
     reset_color();
-    disable_raw_mode();
+    __disable_raw_mode();
     clear_screen();
     exit(0);
 }
@@ -220,29 +274,9 @@ void init_clui()
 {
     clear_screen();
     signal(SIGINT, sigint_handler);
-    enable_raw_mode();
+    __enable_raw_mode();
+    flush();
 }
-
-/*
- * since getchar is a nonstandard function
- * this funtion was implemented.
- * Note that windows has this function
- * implicitly
- */
-#if OS_UNIX
-int getch()
-{
-    struct termios oldattr, newattr;
-    int ch;
-    tcgetattr(STDIN_FILENO, &oldattr);
-    newattr = oldattr;
-    newattr.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
-    return ch;
-}
-#endif
 
 /*
  * a cross platform function to
@@ -251,6 +285,7 @@ int getch()
  */
 void delay(size_t milli_seconds)
 {
+    flush();
 #if OS_UNIX
     usleep(1000 * milli_seconds);
 #else
@@ -318,7 +353,6 @@ int get_cursor_x()
     return x;
 }
 
-
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * gives the x of the cursor
@@ -352,48 +386,74 @@ int get_cursor_y()
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor up n times
  */
-void corsur_up(int n) { printf("\033[%dA", n); }
+void corsur_up(int n) {
+    printf("\033[%dA", n); 
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor down n times
  */
-void cursor_down(int n) { printf("\033[%dB", n); }
+void cursor_down(int n) {
+    printf("\033[%dB", n); 
+    flush();
+}
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * moves corsur forward n time
  */
-void cursor_forward(int n) { printf("\033[%dC", n); }
+void cursor_forward(int n) {
+    printf("\033[%dC", n); 
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * moves corsur backwards n time
  */
-void cursor_backward(int n) { printf("\033[%dD", n); }
+void cursor_backward(int n)
+{
+    printf("\033[%dD", n);
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * moves corsur to the given position
  */
-void cursor_to_pos(int row, int col) { printf("\033[%d;%dH", row, col); }
+void cursor_to_pos(int row, int col)
+{
+    printf("\033[%d;%dH", row, col);
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * saves cursor position for further use
  */
-void save_cursor() { printf("\0337"); }
+void save_cursor() {
+    printf("\0337"); 
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * restors cursor to the last saved
  * position
  */
-void restore_cursor() { printf("\0338"); }
+void restore_cursor() { 
+    printf("\0338"); 
+    flush();
+}
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * plays beep! :)
  */
-void play_beep() { printf("\07"); }
+void play_beep() { 
+    printf("\07"); 
+    flush();
+}
 
 #endif
