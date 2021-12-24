@@ -386,7 +386,9 @@ int get_cursor_y()
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor up n times
  */
-void corsur_up(int n) {
+// this define will solve backward compability issue
+#define corsur_up cursor_up
+void cursor_up(int n) {
     printf("\033[%dA", n); 
     flush();
 }
@@ -401,7 +403,7 @@ void cursor_down(int n) {
 }
 /*
  * NOTE: NEEDS ANSI SUPPORT
- * moves corsur forward n time
+ * moves cursor forward n time
  */
 void cursor_forward(int n) {
     printf("\033[%dC", n); 
@@ -410,7 +412,7 @@ void cursor_forward(int n) {
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
- * moves corsur backwards n time
+ * moves cursor backwards n time
  */
 void cursor_backward(int n)
 {
@@ -420,7 +422,7 @@ void cursor_backward(int n)
 
 /*
  * NOTE: NEEDS ANSI SUPPORT
- * moves corsur to the given position
+ * moves cursor to the given position
  */
 void cursor_to_pos(int row, int col)
 {
