@@ -332,10 +332,10 @@ int get_window_cols()
 int get_cursor_x()
 {
     flush();
-    int x = -1;
+    int x = 0;
 #if OS_UNIX
     const char* const cmd = "IFS=\";\" read -sdR -p $'\"'\\E[6n'\"' ROW COL;\
-                             echo \"${COL#*[}\" > /tmp/cursor_col";
+                             echo \"${ROW#*[}\" > /tmp/cursor_row";
 
     char cmd_bash[200];
     sprintf(cmd_bash, "bash -c '%s' ", cmd);
@@ -343,7 +343,7 @@ int get_cursor_x()
     if (status != 0) {
         return 0;
     }
-    FILE* fp = fopen("/tmp/cursor_col", "r");
+    FILE* fp = fopen("/tmp/cursor_row", "r");
     if (fp == NULL) {
         return 0;
     }
@@ -368,7 +368,7 @@ int get_cursor_y()
     int y = 0;
 #if OS_UNIX
     const char* const cmd = "IFS=\";\" read -sdR -p $'\"'\\E[6n'\"' ROW COL;\
-                             echo \"${ROW#*[}\" > /tmp/cursor_row";
+                             echo \"${COL#*[}\" > /tmp/cursor_col";
 
     char cmd_bash[200];
     sprintf(cmd_bash, "bash -c '%s' ", cmd);
@@ -376,7 +376,7 @@ int get_cursor_y()
     if (status != 0) {
         return 0;
     }
-    FILE* fp = fopen("/tmp/cursor_row", "r");
+    FILE* fp = fopen("/tmp/cursor_col", "r");
     if (fp == NULL) {
         return 0;
     }
