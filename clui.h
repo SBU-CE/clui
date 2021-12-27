@@ -186,7 +186,7 @@ int nb_getch(void)
 void clear_screen()
 {
 #if OS_UNIX
-    system("clear");
+    system("reset");
 #else
     system("CLS");
 #endif
@@ -204,11 +204,10 @@ void change_color_rgb(int r, int g, int b)
 {
     if (0 <= r && r <= 255
         && 0 <= g && g <= 255
-        && 0 <= b && b <= 255){
+        && 0 <= b && b <= 255) {
         printf("\033[38;2;%d;%d;%dm", r, g, b);
         flush();
     }
-    
 }
 
 /*
@@ -245,8 +244,9 @@ void change_background_color(int color)
 /*
  * NOTE: NEEDS ANSI SUPPORT
  */
-void reset_color() { 
-    change_color(COLOR_DEFAULT); 
+void reset_color()
+{
+    change_color(COLOR_DEFAULT);
 }
 
 /*
@@ -332,18 +332,22 @@ int get_window_cols()
 int get_cursor_x()
 {
     flush();
-    int x = 0;
+    int x = -1;
 #if OS_UNIX
-    system("echo -ne \"\\033[6n\";\
-            read -s -d\\[ garbage;\
-            read -s -d R cursor_loc;\
-            echo $cursor_loc > /tmp/cursor_pos");
-    FILE* fp = fopen("/tmp/cursor_pos", "r");
-    if (!fp) {
+    const char* const cmd = "IFS=\";\" read -sdR -p $'\"'\\E[6n'\"' ROW COL;\
+                             echo \"${COL#*[}\" > /tmp/cursor_col";
+
+    char cmd_bash[200];
+    sprintf(cmd_bash, "bash -c '%s' ", cmd);
+    int status = system(cmd_bash);
+    if (status != 0) {
         return 0;
     }
-    int dummy;
-    fscanf(fp, "%d;%d", &x, &dummy);
+    FILE* fp = fopen("/tmp/cursor_col", "r");
+    if (fp == NULL) {
+        return 0;
+    }
+    fscanf(fp, "%d", &x);
     fclose(fp);
 #else
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -363,16 +367,20 @@ int get_cursor_y()
     flush();
     int y = 0;
 #if OS_UNIX
-    system("echo -ne \"\\033[6n\";\
-            read -s -d\\[ garbage;\
-            read -s -d R cursor_loc;\
-            echo $cursor_loc > /tmp/cursor_pos");
-    FILE* fp = fopen("/tmp/cursor_pos", "r");
-    if (!fp) {
+    const char* const cmd = "IFS=\";\" read -sdR -p $'\"'\\E[6n'\"' ROW COL;\
+                             echo \"${ROW#*[}\" > /tmp/cursor_row";
+
+    char cmd_bash[200];
+    sprintf(cmd_bash, "bash -c '%s' ", cmd);
+    int status = system(cmd_bash);
+    if (status != 0) {
         return 0;
     }
-    int dummy;
-    fscanf(fp, "%d;%d", &dummy, &y);
+    FILE* fp = fopen("/tmp/cursor_row", "r");
+    if (fp == NULL) {
+        return 0;
+    }
+    fscanf(fp, "%d", &y);
     fclose(fp);
 #else
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -388,8 +396,9 @@ int get_cursor_y()
  */
 // this define will solve backward compability issue
 #define corsur_up cursor_up
-void cursor_up(int n) {
-    printf("\033[%dA", n); 
+void cursor_up(int n)
+{
+    printf("\033[%dA", n);
     flush();
 }
 
@@ -397,16 +406,18 @@ void cursor_up(int n) {
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor down n times
  */
-void cursor_down(int n) {
-    printf("\033[%dB", n); 
+void cursor_down(int n)
+{
+    printf("\033[%dB", n);
     flush();
 }
 /*
  * NOTE: NEEDS ANSI SUPPORT
  * moves cursor forward n time
  */
-void cursor_forward(int n) {
-    printf("\033[%dC", n); 
+void cursor_forward(int n)
+{
+    printf("\033[%dC", n);
     flush();
 }
 
@@ -434,8 +445,9 @@ void cursor_to_pos(int row, int col)
  * NOTE: NEEDS ANSI SUPPORT
  * saves cursor position for further use
  */
-void save_cursor() {
-    printf("\0337"); 
+void save_cursor()
+{
+    printf("\0337");
     flush();
 }
 
@@ -444,8 +456,9 @@ void save_cursor() {
  * restors cursor to the last saved
  * position
  */
-void restore_cursor() { 
-    printf("\0338"); 
+void restore_cursor()
+{
+    printf("\0338");
     flush();
 }
 
@@ -453,8 +466,9 @@ void restore_cursor() {
  * NOTE: NEEDS ANSI SUPPORT
  * plays beep! :)
  */
-void play_beep() { 
-    printf("\07"); 
+void play_beep()
+{
+    printf("\07");
     flush();
 }
 
