@@ -14,18 +14,3 @@ jobs:
         run: cc -Wall -Wextra -Werror -pedantic sample1.c
       - name: build2
         run: cc -Wall -Wextra -Werror -pedantic sample2.c
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: setup gcc
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
-      - name: build1
-        run: cc -Wall -Wextra -Werror -pedantic sample1.c
-      - name: build2
-        run: cc -Wall -Wextra -Werror -pedantic sample2.c
-
-
-
